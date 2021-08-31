@@ -130,6 +130,9 @@ function! GetValidEntry(linenr)
     if !filereadable(bufname(b:qflist[a:linenr-1].bufnr))
         return {}
     endif
+    " mck
+    let g:qfid = win_getid()
+    " mck
     " Return the valid entry
     return b:qflist[a:linenr-1]
 endfunction
@@ -153,16 +156,28 @@ if has('timers')
     endfunction
     function! InvokeQFList(timer)
         unlet b:quickr_preview_timer
-        silent call QFList(line('.'))
+        call QFList(line('.'))
     endfunction
 else
     function! QFMove(linenr)
         if a:linenr != b:prvlinenr
-            silent call QFList(a:linenr)
+            call QFList(a:linenr)
         endif
     endfunction
 endif
 " }}
+
+" mck
+let g:qfid = 0
+function s:QuitAndReturnToQF()
+    quit
+    "echom "QuitAndReturnToQF: qfid = " . g:qfid
+    if g:qfid != 0
+        call win_gotoid(g:qfid)
+        let g:qfid = 0
+    endif
+endfunction
+" mck
 
 " QFList() {{
 "
@@ -176,12 +191,14 @@ function! QFList(linenr)
     if empty(l:entry)
         return
     endif
+    " mck
     " Close the preview window if the user has selected a same entry again
-    if a:linenr == b:prvlinenr
-        call ClosePreviewWindow()
-        let b:prvlinenr = 0
-        return
-    endif
+    "if a:linenr == b:prvlinenr
+    "    call ClosePreviewWindow()
+    "    let b:prvlinenr = 0
+    "    return
+    "endif
+    " mck
     let b:prvlinenr = a:linenr
     " Check if the buffer of interest is already opened in the preview window
     if GetPreviewWindow() && l:entry.bufnr == b:prvbufnr
@@ -204,18 +221,38 @@ function! QFList(linenr)
         set eventignore+=all
         keepjumps wincmd P
         " Settings for preview window
-        execute 'setlocal '.g:quickr_preview_options
+        " mck
+        if !empty(g:quickr_preview_options)
+            execute 'setlocal '.g:quickr_preview_options
+        endif
+        " mck
         " Setting for unlisted buffers
         if !l:alreadylisted
             setlocal nobuflisted        " don't list this buffer
             setlocal noswapfile         " don't create swap file for this buffer
             setlocal bufhidden=delete   " clear out settings when buffer is hidden
+            " mck
+            setlocal nomodifiable
+            nmap <buffer> <silent> qq         :<C-u>call <SID>QuitAndReturnToQF()<CR>
+            nmap <buffer> <silent> Q          :<C-u>call <SID>QuitAndReturnToQF()<CR>
+            nmap <buffer> <silent> <C-q>      :<C-u>call <SID>QuitAndReturnToQF()<CR>
+            nmap <buffer> <silent> <Leader>qq :<C-u>call <SID>QuitAndReturnToQF()<CR>
+            nmap <buffer> <silent> <S-F27>    :<C-u>call <SID>QuitAndReturnToQF()<CR>
+            nmap <buffer> <silent> <M-C-P>    :<C-u>call <SID>QuitAndReturnToQF()<CR>
+            " mck
         endif
         " Highlight the line of interest
         execute 'match '.g:quickr_preview_line_hl.' /\%'.l:entry.lnum.'l^\s*\zs.\{-}\ze\s*$/'
         " Go back to qf/loc window
-        keepjumps wincmd p
+        " mck
+        "keepjumps wincmd p
+        " mck
         set eventignore-=all
+        " mck
+        if exists('g:vimade_loaded')
+            call vimade#Enable()
+        endif
+        " mck
     endif
     let b:prvbufnr = l:entry.bufnr
 endfunction
@@ -274,7 +311,7 @@ augroup END
 " }}
 
 " Mappings {{
-nnoremap <silent> <buffer> <plug>(quickr_preview) :silent call QFList(line("."))<CR>
+nnoremap <silent> <buffer> <plug>(quickr_preview) :call QFList(line("."))<CR>
 if g:quickr_preview_keymaps
     nmap <leader><space> <plug>(quickr_preview)
 endif
