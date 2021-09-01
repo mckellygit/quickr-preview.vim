@@ -233,12 +233,15 @@ function! QFList(linenr)
             setlocal bufhidden=delete   " clear out settings when buffer is hidden
             " mck
             setlocal nomodifiable
-            nmap <buffer> <silent> qq         :<C-u>call <SID>QuitAndReturnToQF()<CR>
-            nmap <buffer> <silent> Q          :<C-u>call <SID>QuitAndReturnToQF()<CR>
-            nmap <buffer> <silent> <C-q>      :<C-u>call <SID>QuitAndReturnToQF()<CR>
-            nmap <buffer> <silent> <Leader>qq :<C-u>call <SID>QuitAndReturnToQF()<CR>
-            nmap <buffer> <silent> <S-F27>    :<C-u>call <SID>QuitAndReturnToQF()<CR>
-            nmap <buffer> <silent> <M-C-P>    :<C-u>call <SID>QuitAndReturnToQF()<CR>
+            nmap <buffer> <silent> qq              :<C-u>call <SID>QuitAndReturnToQF()<CR>
+            nmap <buffer> <silent> Q               :<C-u>call <SID>QuitAndReturnToQF()<CR>
+            nmap <buffer> <silent> <C-q>           :<C-u>call <SID>QuitAndReturnToQF()<CR>
+            nmap <buffer> <silent> <Leader>qq      :<C-u>call <SID>QuitAndReturnToQF()<CR>
+            nmap <buffer> <silent> <S-F27>         :<C-u>call <SID>QuitAndReturnToQF()<CR>
+            nmap <buffer> <silent> <M-C-P>         :<C-u>call <SID>QuitAndReturnToQF()<CR>
+            nmap <buffer> <silent> <Leader><Space> :<C-u>call <SID>QuitAndReturnToQF()<CR>
+            "nmap <buffer> <silent> <Space>    <C-f>
+            "nmap <buffer> <silent> <BS>       <C-b>
             " mck
         endif
         " Highlight the line of interest
