@@ -243,13 +243,14 @@ function! QFList(linenr)
         " mck
         set eventignore-=all
         " mck
-        nmap <buffer> <silent> qq              :<C-u>call <SID>QuitAndReturnToQF()<CR>
-        nmap <buffer> <silent> Q               :<C-u>call <SID>QuitAndReturnToQF()<CR>
-        nmap <buffer> <silent> <C-q>           :<C-u>call <SID>QuitAndReturnToQF()<CR>
-        nmap <buffer> <silent> <Leader>qq      :<C-u>call <SID>QuitAndReturnToQF()<CR>
-        nmap <buffer> <silent> <S-F27>         :<C-u>call <SID>QuitAndReturnToQF()<CR>
-        nmap <buffer> <silent> <M-C-P>         :<C-u>call <SID>QuitAndReturnToQF()<CR>
-        nmap <buffer> <silent> <Leader><Space> :<C-u>call <SID>QuitAndReturnToQF()<CR>
+        nmap <buffer> <silent> qq              :call <SID>QuitAndReturnToQF()<CR>
+        nmap <buffer> <silent> Q               :call <SID>QuitAndReturnToQF()<CR>
+        nmap <buffer> <silent> <C-q>           :call <SID>QuitAndReturnToQF()<CR>
+        nmap <buffer> <silent> <Leader>qq      :call <SID>QuitAndReturnToQF()<CR>
+        nmap <buffer> <silent> <S-F27>         :call <SID>QuitAndReturnToQF()<CR>
+        nmap <buffer> <silent> <M-C-P>         :call <SID>QuitAndReturnToQF()<CR>
+        "nmap <buffer> <silent> <Leader><Space> :call <SID>QuitAndReturnToQF()<CR>
+        nmap <buffer> <silent> \|<C-^><Space>  :call <SID>QuitAndReturnToQF()<CR>
         "nmap <buffer> <silent> <Space>    <C-f>
         "nmap <buffer> <silent> <BS>       <C-b>
         if exists('g:vimade_loaded')
