@@ -114,6 +114,9 @@ function! GetValidEntry(linenr)
     if &filetype !=# 'qf'
         return {}
     endif
+    " mck
+    let g:qfid = win_getid()
+    " mck
     " Ensure the cached qf/loc list is up to date
     if !GetLatestQfLocList()
         return {}
@@ -130,13 +133,14 @@ function! GetValidEntry(linenr)
     if !filereadable(bufname(b:qflist[a:linenr-1].bufnr))
         return {}
     endif
-    " mck
-    let g:qfid = win_getid()
-    " mck
     " Return the valid entry
     return b:qflist[a:linenr-1]
 endfunction
 " }}
+
+" example qf dict entry -
+"   {'lnum': 4780, 'bufnr': 7, 'end_lnum': 4780, 'user_data': {'uri': 'file:///some/path/to/a/file.cpp', 'range': {'end': {'character': 18, 'line': 4779}, 'start':
+"     {'character': 7, 'line': 4779}}}, 'pattern': '', 'valid': 1, 'vcol': 0, 'nr': 0, 'module': '', 'type': '', 'end_col': 19, 'col': 8, 'text': 'call func1(sample-arg);'}
 
 " QFMove() {{
 "
@@ -147,6 +151,10 @@ endfunction
 "
 if has('timers')
     function! QFMove(linenr)
+        " if preview window not open then just return ...
+        if GetPreviewWindow() == 0
+            return 0
+        endif
         if a:linenr != b:prvlinenr
             if exists('b:quickr_preview_timer')
                 call timer_stop(b:quickr_preview_timer)
@@ -157,11 +165,23 @@ if has('timers')
     function! InvokeQFList(timer)
         unlet b:quickr_preview_timer
         call QFList(line('.'))
+        " go back to QF ...
+        if g:qfid != 0
+            call win_gotoid(g:qfid)
+        endif
     endfunction
 else
     function! QFMove(linenr)
+        " if preview window not open then just return ...
+        if GetPreviewWindow() == 0
+            return 0
+        endif
         if a:linenr != b:prvlinenr
             call QFList(a:linenr)
+        endif
+        " go back to QF ...
+        if g:qfid != 0
+            call win_gotoid(g:qfid)
         endif
     endfunction
 endif
@@ -299,6 +319,8 @@ endfunction
 " by quickr-preview. This should be called each time a new qf/loc
 " buffer is created.
 "
+let b:prvlinenr = 0
+let b:prvbufnr = 0
 function! InitializeQuickrPreview()
     " Initialize default values
     let b:prvlinenr = 0
