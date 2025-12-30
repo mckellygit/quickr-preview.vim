@@ -48,6 +48,14 @@ function! GetPreviewWindow()
 endfunction
 " }}
 
+function! CloseQuickrPreviewWindow()
+    if GetPreviewWindow()
+        call ClosePreviewWindow()
+        let g:prvlinenr = 0
+        let g:prvbufnr = 0
+    endif
+endfunction
+
 " GetLatestQfLocList() {{
 "
 " This function updates the locally cached qf/loc list (b:qflist)
@@ -155,7 +163,7 @@ if has('timers')
         if GetPreviewWindow() == 0
             return 0
         endif
-        if a:linenr != b:prvlinenr
+        if a:linenr != g:prvlinenr
             if exists('b:quickr_preview_timer')
                 call timer_stop(b:quickr_preview_timer)
             endif
@@ -176,7 +184,7 @@ else
         if GetPreviewWindow() == 0
             return 0
         endif
-        if a:linenr != b:prvlinenr
+        if a:linenr != g:prvlinenr
             call QFList(a:linenr)
         endif
         " go back to QF ...
@@ -189,12 +197,28 @@ endif
 
 " mck
 let g:qfid = 0
-function s:QuitAndReturnToQF()
-    quit
-    "echom "QuitAndReturnToQF: qfid = " . g:qfid
-    if g:qfid != 0
-        call win_gotoid(g:qfid)
-        let g:qfid = 0
+function s:QuitAndReturnToQF(wtype)
+    try
+        nunmap <buffer> <Leader>qq
+        nunmap <buffer> <M-q>
+        nunmap <buffer> <F18>
+    catch
+    endtry
+    for l:winnr in range(1, winnr('$'))
+        if getwinvar(l:winnr, '&previewwindow')
+            if l:winnr == winnr()
+                quit
+                "echom "QuitAndReturnToQF: qfid = " . g:qfid
+                if g:qfid != 0
+                    call win_gotoid(g:qfid)
+                    let g:qfid = 0
+                endif
+                return
+            endif
+        endif
+    endfor
+    if a:wtype > 0
+        call MCKConfNextOrQuit()
     endif
 endfunction
 " mck
@@ -219,13 +243,13 @@ function! QFList(linenr)
     "    return
     "endif
     " mck
-    let b:prvlinenr = a:linenr
+    let g:prvlinenr = a:linenr
     " Check if the buffer of interest is already opened in the preview window
-    if GetPreviewWindow() && l:entry.bufnr == b:prvbufnr
+    if GetPreviewWindow() && l:entry.bufnr == g:prvbufnr
         " Go to preview window
         set eventignore+=all
         keepjumps wincmd P
-        " Jump to the line of interest
+        " center the line of interest
         execute 'keepjumps '.l:entry.lnum.' | normal! zz'
         " Highlight the line of interest
         execute 'match '.g:quickr_preview_line_hl.' /\%'.l:entry.lnum.'l^\s*\zs.\{-}\ze\s*$/'
@@ -255,6 +279,8 @@ function! QFList(linenr)
             setlocal nomodifiable
             " mck
         endif
+        " center the line of interest
+        execute 'keepjumps '.l:entry.lnum.' | normal! zz'
         " Highlight the line of interest
         execute 'match '.g:quickr_preview_line_hl.' /\%'.l:entry.lnum.'l^\s*\zs.\{-}\ze\s*$/'
         " Go back to qf/loc window
@@ -263,16 +289,29 @@ function! QFList(linenr)
         " mck
         set eventignore-=all
         " mck
-        nmap <buffer> <silent> qq              :call <SID>QuitAndReturnToQF()<CR>
-        nmap <buffer> <silent> Q               :call <SID>QuitAndReturnToQF()<CR>
-        nmap <buffer> <silent> <C-q>           :call <SID>QuitAndReturnToQF()<CR>
-        nmap <buffer> <silent> <Leader>qq      :call <SID>QuitAndReturnToQF()<CR>
-        nmap <buffer> <silent> <S-F27>         :call <SID>QuitAndReturnToQF()<CR>
-        nmap <buffer> <silent> <M-C-P>         :call <SID>QuitAndReturnToQF()<CR>
+        "nmap <buffer> <silent> qq              :call <SID>QuitAndReturnToQF()<CR>
+        "nmap <buffer> <silent> Q               :call <SID>QuitAndReturnToQF()<CR>
+
+        nnoremap <buffer> <silent> <Leader>qq      :call <SID>QuitAndReturnToQF(1)<CR>
+        nnoremap <buffer> <silent> <M-q>           :call <SID>QuitAndReturnToQF(0)<CR>
+        nnoremap <buffer> <silent> <F18>           :call <SID>QuitAndReturnToQF(0)<CR>
+
+        nnoremap <buffer> <silent> <S-F27>         :call <SID>QuitAndReturnToQF(0)<CR>
+        nnoremap <buffer> <silent> <M-C-P>         :call <SID>QuitAndReturnToQF(0)<CR>
         "nmap <buffer> <silent> <Leader><Space> :call <SID>QuitAndReturnToQF()<CR>
-        nmap <buffer> <silent> \|<C-^><Space>  :call <SID>QuitAndReturnToQF()<CR>
+        "nmap <buffer> <silent> \|<C-^><Space>  :call <SID>QuitAndReturnToQF()<CR>
         "nmap <buffer> <silent> <Space>    <C-f>
         "nmap <buffer> <silent> <BS>       <C-b>
+
+        "autocmd WinEnter * if &previewwindow | lua vim.diagnostic.disable('<abuf>') | endif
+"lua << LUA1_EOF
+"        local buf = vim.api.nvim_get_current_buf()
+"        for _, client in ipairs(vim.lsp.get_clients()) do
+"            vim.lsp.buf_detach_client(buf, client.id)
+"        end
+"        -- vim.diagnostic.disable(buf) 
+"LUA1_EOF
+
         if exists('g:vimade_loaded')
             call vimade#Enable()
         endif
@@ -284,7 +323,8 @@ function! QFList(linenr)
         endif
         " mck
     endif
-    let b:prvbufnr = l:entry.bufnr
+    let g:prvbufnr = l:entry.bufnr
+    echo ""
 endfunction
 " }}
 
@@ -319,12 +359,12 @@ endfunction
 " by quickr-preview. This should be called each time a new qf/loc
 " buffer is created.
 "
-let b:prvlinenr = 0
-let b:prvbufnr = 0
+let g:prvlinenr = 0
+let g:prvbufnr = 0
 function! InitializeQuickrPreview()
     " Initialize default values
-    let b:prvlinenr = 0
-    let b:prvbufnr = 0
+    let g:prvlinenr = 0
+    let g:prvbufnr = 0
     " Grab the qf/loc list
     call GetLatestQfLocList()
 endfunction
@@ -342,8 +382,29 @@ augroup QuickrPreviewQfAutoCmds
 augroup END
 " }}
 
+function! CloseOrOpenQuickrPreviewWindow()
+    if GetPreviewWindow()
+        call ClosePreviewWindow()
+        let g:prvlinenr = 0
+        let g:prvbufnr = 0
+        augroup QuickrPreviewQfAutoCmds2
+            autocmd!
+        augroup END
+    else
+        call QFList(line("."))
+        silent execute "silent normal! \<C-w>p"
+        redraw
+        echo ""
+        augroup QuickrPreviewQfAutoCmds2
+            autocmd!
+            autocmd BufWinLeave * if &buftype == 'quickfix' | call CloseQuickrPreviewWindow() | endif
+        augroup END
+    endif
+endfunction
+
 " Mappings {{
-nnoremap <silent> <buffer> <plug>(quickr_preview) :call QFList(line("."))<CR>
+"nnoremap <silent> <buffer> <plug>(quickr_preview) :call QFList(line("."))<CR>
+nnoremap <silent> <buffer> <plug>(quickr_preview) :call CloseOrOpenQuickrPreviewWindow()<CR>
 if g:quickr_preview_keymaps
     nmap <leader><space> <plug>(quickr_preview)
 endif
